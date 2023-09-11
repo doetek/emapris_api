@@ -1,3 +1,4 @@
+
 import express from 'express';
 import expressAsyncHandler from 'express-async-handler';
 import Order from '../models/orderModel.js';
@@ -7,13 +8,31 @@ import { isAuth, isAdmin, mailgun, payOrderEmailTemplate } from '../utils.js';
 
 const orderRouter = express.Router();
 
+const formatDateAndTime = (date) => {
+  return date.toLocaleString('en-NG', {
+    timeZone: 'Africa/Lagos', // Set the time zone to Nigeria
+    year: 'numeric',
+    month: 'numeric',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: 'numeric',
+    second: 'numeric',
+  });
+};
+
 orderRouter.get(
   '/',
   isAuth,
   isAdmin,
   expressAsyncHandler(async (req, res) => {
     const orders = await Order.find().populate('user', 'username');
-    res.send(orders);
+    // Format date and time for each order
+    const formattedOrders = orders.map((order) => ({
+      ...order._doc,
+      createdAt: formatDateAndTime(order.createdAt),
+      updatedAt: formatDateAndTime(order.updatedAt),
+    }));
+    res.send(formattedOrders);
   })
 );
 
@@ -33,9 +52,12 @@ orderRouter.post(
     });
 
     const order = await newOrder.save();
+    // Format date and time for the newly created order
+    order.createdAt = formatDateAndTime(order.createdAt);
     res.status(201).send({ message: 'New Order Created', order });
   })
 );
+
 
 orderRouter.get(
   '/summary',
@@ -172,7 +194,7 @@ orderRouter.delete(
   expressAsyncHandler(async (req, res) => {
     const order = await Order.findById(req.params.id);
     if (order) {
-      await order.remove();
+      await order.deleteOne();
       res.send({ message: 'Order Deleted' });
     } else {
       res.status(404).send({ message: 'Order Not Found' });
