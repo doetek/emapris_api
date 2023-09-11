@@ -1,4 +1,3 @@
-
 import express from 'express';
 import expressAsyncHandler from 'express-async-handler';
 import Order from '../models/orderModel.js';
@@ -25,7 +24,7 @@ orderRouter.get(
   isAuth,
   isAdmin,
   expressAsyncHandler(async (req, res) => {
-    const orders = await Order.find().populate('user', 'username');
+    const orders = await Order.find({}).populate('user', ['email', 'name']);
     // Format date and time for each order
     const formattedOrders = orders.map((order) => ({
       ...order._doc,
@@ -57,7 +56,6 @@ orderRouter.post(
     res.status(201).send({ message: 'New Order Created', order });
   })
 );
-
 
 orderRouter.get(
   '/summary',
